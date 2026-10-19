@@ -1,0 +1,5 @@
+# Only applies to this site's own *.netlify.app mirror domain.
+# The real pages live at https://crewzo.co.in/resources/blog/ and are governed by
+# the main domain's robots.txt (managed in the marketing site repo).
+User-agent: *
+Disallow: /

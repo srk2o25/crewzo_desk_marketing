@@ -1,0 +1,16 @@
+[build]
+  command = "npm run build"
+  publish = "out"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# No rewrite rules needed: scripts/nest-output.mjs puts the pages at out/resources/blog/, matching their URLs.
+
+# This site's own domain is only a mirror: every page's canonical points at the main domain, and
+# public/robots.txt (served at this site's root only) keeps crawlers off the mirror. Don't add an
+# X-Robots-Tag noindex header here: Netlify's proxy forwards headers, so it would noindex the real pages.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"

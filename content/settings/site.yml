@@ -1,0 +1,16 @@
+# Single source of truth for the organisation entity. Rendered into JSON-LD by the page templates.
+# The landing page's Organization JSON-LD uses the same @id (<url>/#organization) — keep both in sync.
+name: Crewzo Desk
+url: https://crewzo.co.in
+logo: /logos/logo-horizontal-black.png
+email: soundar.j@crewzo.co.in
+description: A service desk for MSPs that runs inside Microsoft Teams, with a separate SLA for every client.
+sameAs: []
+product:
+  name: Crewzo Desk
+  description: Service desk for managed service providers (MSPs) inside Microsoft Teams, with per-client SLA policies, business hours and time zones.
+  category: BusinessApplication
+  url: https://crewzo.co.in/
+blog:
+  title: Crewzo Desk Blog
+  description: Practical guides for MSPs on running a service desk in Microsoft Teams, setting SLAs per client, and choosing ticketing software.

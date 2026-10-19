@@ -1,0 +1,225 @@
+# Decap CMS. Field rules mirror lib/schema.mjs; the build-time lint (scripts/lint-content.mjs) is the final gate.
+backend:
+  name: github
+  repo: srk2o25/crewzo_desk_marketing
+  branch: main
+  # GitHub login goes through Netlify's OAuth provider (Project configuration > Security > OAuth).
+  # Doesn't use Netlify Identity / Git Gateway.
+  base_url: https://api.netlify.com
+  auth_endpoint: auth
+  # Login is relayed by the Netlify site that owns the domain the editor is opened on (crewzo.co.in ->
+  # the Netlify site that serves crewzo.co.in), so the GitHub OAuth provider is installed there. Install the same GitHub OAuth provider on the
+  # crewzo-desk-marketing site too; Netlify only hands the login back to a site's own domains.
+  site_domain: crewzo.co.in
+  commit_messages:
+    create: "Create {{collection}} “{{slug}}”"
+    update: "Update {{collection}} “{{slug}}”"
+    delete: "Delete {{collection}} “{{slug}}”"
+    uploadMedia: "Upload “{{path}}”"
+    deleteMedia: "Delete “{{path}}”"
+
+# Local mode: `npm run cms` starts decap-server, and the editor at localhost saves straight to files on disk
+# (no GitHub login, no pull requests). Ignored everywhere except localhost.
+local_backend: true
+
+# Draft -> In review -> Ready. Each draft is a branch + pull request; its Netlify deploy preview runs the
+# content lint and build checks, so a post that breaks the rules can't be approved into main.
+publish_mode: editorial_workflow
+
+site_url: https://crewzo.co.in/resources/blog/
+display_url: https://crewzo.co.in/resources/blog/
+logo_url: /logos/logo-horizontal-black.png
+
+# One central, flat folder for every post image.
+media_folder: public/images/blog
+public_folder: /images/blog
+
+slug:
+  encoding: ascii
+  clean_accents: true
+  sanitize_replacement: "-"
+
+collections:
+  - name: posts
+    label: Posts
+    label_singular: Post
+    description: "Writing guide: phrase H2/H3 headings as reader questions, and answer each in about 60 words right below it."
+    folder: content/posts
+    extension: md
+    format: frontmatter
+    create: true
+    # Flat, date-free file names: content/posts/<slug>.md -> /resources/blog/<slug>/
+    slug: "{{fields.slug}}"
+    identifier_field: title
+    summary: "{{title}} ({{date}})"
+    sortable_fields: [date, title]
+    preview_path: "{{slug}}/"
+    fields:
+      - { name: id, label: ID, widget: uuid, hint: "Permanent ID, filled in automatically. Never edit it." }
+      - { name: title, label: Title, widget: string, hint: "10 to 90 characters. Becomes the H1.", pattern: ['^.{10,90}$', '10 to 90 characters'] }
+      - name: slug
+        label: URL slug
+        widget: string
+        hint: "Lowercase words joined by hyphens, no dates. Can't be changed after publishing without a redirect."
+        pattern: ['^[a-z0-9]+(-[a-z0-9]+)*$', 'lowercase letters, numbers and single hyphens only']
+      - { name: description, label: Meta description, widget: text, hint: "70 to 160 characters. Qualifies the search query.", pattern: ['^[\s\S]{70,160}$', '70 to 160 characters'] }
+      - name: summary
+        label: Summary answer
+        widget: text
+        hint: "The direct answer to the title, ideally 60 words or fewer. Shown at the top of the post and quoted by answer engines."
+      - { name: date, label: Published, widget: datetime, format: YYYY-MM-DD, date_format: YYYY-MM-DD, time_format: false, picker_utc: true }
+      - { name: updated, label: Last updated, widget: datetime, format: YYYY-MM-DD, date_format: YYYY-MM-DD, time_format: false, picker_utc: true, required: false }
+      - { name: author, label: Author, widget: relation, collection: authors, search_fields: [name], value_field: "{{slug}}", display_fields: [name] }
+      - { name: tags, label: Tags, widget: list, hint: "Lowercase, hyphenated.", field: { name: tag, label: Tag, widget: string, pattern: ['^[a-z0-9]+(-[a-z0-9]+)*$', 'lowercase-hyphenated'] } }
+      - { name: image, label: Cover image, widget: image, required: false, hint: "Lowercase-hyphenated file name, e.g. first-reply-chart.png" }
+      - { name: imageAlt, label: Cover image alt text, widget: string, required: false }
+      - { name: product, label: "About the Crewzo Desk product?", widget: boolean, default: false, hint: "Adds the SoftwareApplication entity to this post's structured data." }
+      - name: faqs
+        label: FAQs
+        label_singular: FAQ
+        widget: list
+        required: false
+        hint: "Optional. Follow-up questions about this post's topic (not about Crewzo Desk), shown at the end and as FAQ structured data."
+        fields:
+          - { name: question, label: Question, widget: string, hint: "Phrase it the way a reader would ask it." }
+          - { name: answer, label: Answer, widget: text, hint: "Ideally 60 words or fewer, and makes sense on its own." }
+      - name: robots
+        label: Search & snippet controls
+        widget: object
+        collapsed: true
+        fields:
+          - { name: maxSnippet, label: "Max snippet length (-1 = no limit)", widget: number, value_type: int, default: -1, min: -1 }
+          - { name: noindex, label: "Hide from search engines", widget: boolean, default: false }
+      - name: body
+        label: Body
+        widget: markdown
+        hint: "Standard Markdown. Link sources inline in the text. For richer blocks use plain HTML (table, figure, details). Wrap text you don't want quoted in <div data-nosnippet>…</div>."
+
+  - name: case_studies
+    label: Case studies
+    label_singular: Case study
+    description: "Customer stories. Use real customers and real figures only, with their permission."
+    folder: content/case-studies
+    extension: md
+    format: frontmatter
+    create: true
+    slug: "{{fields.slug}}"
+    identifier_field: title
+    summary: "{{customer}}: {{title}}"
+    preview_path: "case-studies/{{slug}}/"
+    fields:
+      - { name: id, label: ID, widget: uuid, hint: "Permanent ID, filled in automatically. Never edit it." }
+      - { name: title, label: Title, widget: string, hint: "The outcome, e.g. how the customer answered every enquiry within minutes.", pattern: ['^.{10,90}$', '10 to 90 characters'] }
+      - { name: slug, label: URL slug, widget: string, hint: "Lowercase words joined by hyphens. Lives at /resources/blog/case-studies/<slug>/.", pattern: ['^[a-z0-9]+(-[a-z0-9]+)*$', 'lowercase letters, numbers and single hyphens only'] }
+      - { name: description, label: Meta description, widget: text, hint: "70 to 160 characters. Shown in search results and link previews.", pattern: ['^[\s\S]{70,160}$', '70 to 160 characters'] }
+      - { name: summary, label: Summary answer, widget: text, hint: "The story in about 60 words: who, the problem, the result." }
+      - { name: date, label: Published, widget: datetime, format: YYYY-MM-DD, date_format: YYYY-MM-DD, time_format: false, picker_utc: true }
+      - { name: updated, label: Last updated, widget: datetime, format: YYYY-MM-DD, date_format: YYYY-MM-DD, time_format: false, picker_utc: true, required: false }
+      - { name: customer, label: Customer name, widget: string }
+      - { name: customerUrl, label: Customer website, widget: string, required: false, pattern: ['^(https://.*)?$', 'must start with https://'] }
+      - { name: industry, label: Industry, widget: string, required: false, hint: "e.g. Lettings agency, Build to rent" }
+      - name: results
+        label: Results
+        label_singular: Result
+        widget: list
+        required: false
+        hint: "Up to three headline figures, shown as cards. Real, measured numbers only."
+        fields:
+          - { name: value, label: Figure, widget: string, hint: "e.g. 3x, 90%, 2 min" }
+          - { name: label, label: What it measures, widget: string, hint: "e.g. faster first reply" }
+      - name: quote
+        label: Customer quote
+        widget: object
+        required: false
+        collapsed: true
+        fields:
+          - { name: text, label: Quote, widget: text, required: false }
+          - { name: name, label: Person, widget: string, required: false }
+          - { name: role, label: Role, widget: string, required: false }
+      - { name: tags, label: Tags, widget: list, required: false, field: { name: tag, label: Tag, widget: string, pattern: ['^[a-z0-9]+(-[a-z0-9]+)*$', 'lowercase-hyphenated'] } }
+      - { name: image, label: Cover image, widget: image, required: false }
+      - { name: imageAlt, label: Cover image alt text, widget: string, required: false }
+      - name: robots
+        label: Search & snippet controls
+        widget: object
+        collapsed: true
+        fields:
+          - { name: maxSnippet, label: "Max snippet length (-1 = no limit)", widget: number, value_type: int, default: -1, min: -1 }
+          - { name: noindex, label: "Hide from search engines", widget: boolean, default: false }
+      - { name: body, label: Story, widget: markdown, hint: "Suggested headings: What was the challenge? What did they change? What were the results?" }
+
+  - name: glossary
+    label: Glossary
+    label_singular: Term
+    description: "Short definitions of industry terms. Each term gets a page titled 'What is <term>?'."
+    folder: content/glossary
+    extension: md
+    format: frontmatter
+    create: true
+    slug: "{{fields.slug}}"
+    identifier_field: term
+    summary: "{{term}}"
+    preview_path: "glossary/{{slug}}/"
+    fields:
+      - { name: id, label: ID, widget: uuid, hint: "Permanent ID, filled in automatically. Never edit it." }
+      - { name: term, label: Term, widget: string, hint: "e.g. Holding deposit", pattern: ['^.{2,60}$', '2 to 60 characters'] }
+      - { name: slug, label: URL slug, widget: string, hint: "Lowercase words joined by hyphens. Lives at /resources/blog/glossary/<slug>/.", pattern: ['^[a-z0-9]+(-[a-z0-9]+)*$', 'lowercase letters, numbers and single hyphens only'] }
+      - { name: description, label: Meta description, widget: text, hint: "70 to 160 characters. Shown in search results and link previews.", pattern: ['^[\s\S]{70,160}$', '70 to 160 characters'] }
+      - { name: definition, label: Definition, widget: text, hint: "The answer to 'What is <term>?' in about 40 to 60 words. Makes sense on its own." }
+      - { name: date, label: Published, widget: datetime, format: YYYY-MM-DD, date_format: YYYY-MM-DD, time_format: false, picker_utc: true }
+      - { name: updated, label: Last updated, widget: datetime, format: YYYY-MM-DD, date_format: YYYY-MM-DD, time_format: false, picker_utc: true, required: false }
+      - name: robots
+        label: Search & snippet controls
+        widget: object
+        collapsed: true
+        fields:
+          - { name: maxSnippet, label: "Max snippet length (-1 = no limit)", widget: number, value_type: int, default: -1, min: -1 }
+          - { name: noindex, label: "Hide from search engines", widget: boolean, default: false }
+      - { name: body, label: More detail, widget: markdown, required: false, hint: "Optional: examples, how it works in practice, links to related posts." }
+
+  - name: authors
+    label: Authors
+    label_singular: Author
+    folder: content/authors
+    extension: yml
+    format: yml
+    create: true
+    slug: "{{slug}}"
+    identifier_field: name
+    fields:
+      - { name: name, label: Name, widget: string }
+      - { name: type, label: Type, widget: select, options: [Person, Organization], default: Person, hint: "Use Person for named authors (stronger trust signal)." }
+      - { name: jobTitle, label: Job title, widget: string, required: false }
+      - { name: bio, label: Short bio, widget: text, required: false }
+      - { name: image, label: Photo, widget: image, required: false }
+      - { name: sameAs, label: "Profiles (LinkedIn, etc.)", widget: list, field: { name: url, label: URL, widget: string } }
+
+  - name: settings
+    label: Settings
+    editor: { preview: false }
+    files:
+      - name: site
+        label: Organisation & product
+        file: content/settings/site.yml
+        fields:
+          - { name: name, label: Organisation name, widget: string }
+          - { name: url, label: Main site URL, widget: string, hint: "No trailing slash." }
+          - { name: logo, label: Logo path, widget: string }
+          - { name: email, label: Contact email, widget: string }
+          - { name: description, label: Description, widget: text }
+          - { name: sameAs, label: "Official profiles (LinkedIn, Crunchbase…)", widget: list, field: { name: url, label: URL, widget: string } }
+          - name: product
+            label: Product
+            widget: object
+            fields:
+              - { name: name, label: Name, widget: string }
+              - { name: description, label: Description, widget: text }
+              # Fixed schema.org value describing the product; not something editors need to change.
+              - { name: category, label: Application category, widget: hidden, default: BusinessApplication }
+              - { name: url, label: URL, widget: string }
+          - name: blog
+            label: Blog
+            widget: object
+            fields:
+              - { name: title, label: Title, widget: string }
+              - { name: description, label: Description, widget: text }

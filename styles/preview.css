@@ -1,0 +1,4 @@
+/* Source for public/admin/preview.css (editor preview pane, class names from public/admin/cms.js). Built by `npm run css:preview`. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

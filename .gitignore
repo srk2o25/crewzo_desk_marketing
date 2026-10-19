@@ -1,0 +1,9 @@
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+.env*
+# generated at build time by scripts/generate-llms.mjs
+public/llms.txt
+public/admin/preview.css
